@@ -75,10 +75,11 @@ CARD_BG     = "#252525"   # Karten-Hintergrund
 SURFACE2    = "#2E2E2E"   # Eingabefelder / Sekundär
 
 # Icon-Akzentfarben: Blau · Rot
-BLUE        = "#3BBAE7"   # Helles Blau – NUR für Textakzente / Highlights
-BLUE_HVR    = "#2AA8D8"   # Hover-Textakzent
-BTN_PRIMARY = "#1A6EB5"   # Dunkleres Blau für Button-BG  (Kontrast auf Weiß ≈ 4.8:1)
-BTN_HVR     = "#145A99"   # Hover Button-BG
+BLUE        = "#3BBAE7"   # Helles Blau – Textakzente & Buttons
+BLUE_HVR    = "#2AA8D8"   # Hover
+BTN_PRIMARY = "#3BBAE7"   # Button-BG (user-defined)
+BTN_HVR     = "#2AA8D8"   # Hover
+BTN_TEXT    = "#0D1217"   # Dunkler Text auf hellem Blau
 RED         = "#EE362E"   # Rotakzent
 RED_HVR     = "#C42020"   # Hover-Rot
 WHITE       = "#FFFFFF"
@@ -86,7 +87,7 @@ TEXT_PRI    = "#FFFFFF"
 TEXT_SEC    = "#777777"   # Sekundäres Grau
 BORDER      = "#3A3A3A"   # Trennlinien
 
-# Compat-Aliase  (YELLOW → dunkles Button-Blau, BLUE bleibt für Textakzente)
+# Compat-Aliase
 YELLOW      = BTN_PRIMARY
 YELLOW_HVR  = BTN_HVR
 SURFACE     = BG
@@ -247,7 +248,7 @@ class CardMeApp(ctk.CTk):
         ctk.CTkButton(
             self.sidebar, text="+ Neues Deck",
             fg_color=YELLOW, hover_color=YELLOW_HVR,
-            text_color="#FFFFFF",
+            text_color=BTN_TEXT,
             font=ctk.CTkFont(FONT, 12, "bold"), height=34,
             command=self._prompt_new_deck
         ).grid(row=3, column=0, padx=10, pady=8, sticky="ew")
@@ -396,7 +397,7 @@ class CardMeApp(ctk.CTk):
         self.btn_reveal = ctk.CTkButton(
             btn_row, text="Antwort aufdecken",
             fg_color=YELLOW, hover_color=YELLOW_HVR,
-            text_color="#FFFFFF",
+            text_color=BTN_TEXT,
             font=ctk.CTkFont(FONT, 13, "bold"), width=210, height=42,
             command=self._reveal_answer
         )
@@ -404,8 +405,8 @@ class CardMeApp(ctk.CTk):
 
         self.btn_next = ctk.CTkButton(
             btn_row, text="Nächste Karte  →",
-            fg_color=CARD_BG, hover_color=BORDER,
-            text_color=WHITE,
+            fg_color="#FFFFFF", hover_color="#E0E0E0",
+            text_color="#1A1A1A",
             font=ctk.CTkFont(FONT, 13), width=170, height=42,
             command=self._next_card
         )
@@ -583,7 +584,7 @@ class CardMeApp(ctk.CTk):
         ctk.CTkButton(
             box, text="Karte speichern",
             fg_color=YELLOW, hover_color=YELLOW_HVR,
-            text_color="#FFFFFF",
+            text_color=BTN_TEXT,
             font=ctk.CTkFont(FONT, 13, "bold"), height=40, width=210,
             command=self._save_card
         ).grid(row=6, column=0, padx=28, pady=(0, 24))
@@ -674,7 +675,7 @@ class CardMeApp(ctk.CTk):
             ctk.CTkButton(
                 btn_box, text="✎  Bearbeiten", width=110, height=30,
                 fg_color=YELLOW, hover_color=YELLOW_HVR,
-                text_color="#FFFFFF", font=ctk.CTkFont(FONT, 11, "bold"),
+                text_color=BTN_TEXT, font=ctk.CTkFont(FONT, 11, "bold"),
                 command=lambda i=idx: self._edit_card(i)
             ).pack(side="left", padx=(0, 4))
 
@@ -748,7 +749,7 @@ class CardMeApp(ctk.CTk):
         ctk.CTkButton(
             win, text="Änderungen speichern",
             fg_color=YELLOW, hover_color=YELLOW_HVR,
-            text_color="#FFFFFF",
+            text_color=BTN_TEXT,
             font=ctk.CTkFont(FONT, 13, "bold"), height=38, width=220,
             command=_apply
         ).pack(pady=10)
@@ -776,7 +777,7 @@ class CardMeApp(ctk.CTk):
                 text=f"  {deck}",
                 fg_color=YELLOW if active else "transparent",
                 hover_color=YELLOW_HVR if active else CARD_BG,
-                text_color="#FFFFFF" if active else TEXT_SEC,
+                text_color=BTN_TEXT if active else TEXT_SEC,
                 font=ctk.CTkFont(FONT, 12, "bold" if active else "normal"),
                 height=34, anchor="w",
                 command=lambda d=deck: self._select_deck(d)
@@ -877,7 +878,7 @@ class CardMeApp(ctk.CTk):
 
         ctk.CTkButton(row, text="Durchsuchen", width=100, height=36,
                       fg_color=YELLOW, hover_color=YELLOW_HVR,
-                      text_color="#FFFFFF", command=browse).pack(side="left")
+                      text_color=BTN_TEXT, command=browse).pack(side="left")
 
         def apply_settings():
             new_dir = path_var.get().strip()
@@ -904,7 +905,7 @@ class CardMeApp(ctk.CTk):
 
         ctk.CTkButton(win, text="Speichern & Schließen",
                       fg_color=YELLOW, hover_color=YELLOW_HVR,
-                      text_color="#FFFFFF",
+                      text_color=BTN_TEXT,
                       font=ctk.CTkFont(FONT, 13, "bold"), height=38,
                       command=apply_settings).pack(pady=14)
 

@@ -24,16 +24,23 @@ jobs:
 
       - name: Build .app with PyInstaller
         run: |
-          pyinstaller --onefile --windowed \
+          pyinstaller --windowed \
             --name "CardMe" \
             --icon "img/icon.ico" \
             --add-data "img:img" \
             main.py --noconfirm
 
+      - name: Sign app (ad-hoc, self-signed)
+        run: |
+          # Ad-hoc signing: kostenlos, kein Apple-Konto nötig
+          # Verhindert "damaged app"-Fehler auf Apple Silicon
+          codesign --deep --force --sign - --options runtime dist/CardMe.app
+          codesign --verify --deep --strict dist/CardMe.app && echo "✅ Signierung erfolgreich"
+
       - name: Zip the .app bundle
         run: |
           cd dist
-          zip -r CardMe-macOS.zip CardMe
+          zip -r CardMe-macOS.zip CardMe.app
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4

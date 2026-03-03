@@ -1,0 +1,43 @@
+name: Build macOS App
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install customtkinter pillow pyinstaller
+
+      - name: Build .app with PyInstaller
+        run: |
+          pyinstaller --onefile --windowed \
+            --name "CardMe" \
+            --icon "img/icon.ico" \
+            --add-data "img:img" \
+            main.py --noconfirm
+
+      - name: Zip the .app bundle
+        run: |
+          cd dist
+          zip -r CardMe-macOS.zip CardMe
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CardMe-macOS
+          path: dist/CardMe-macOS.zip
+          retention-days: 30

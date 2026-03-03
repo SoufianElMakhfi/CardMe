@@ -75,18 +75,20 @@ CARD_BG     = "#252525"   # Karten-Hintergrund
 SURFACE2    = "#2E2E2E"   # Eingabefelder / Sekundär
 
 # Icon-Akzentfarben: Blau · Rot
-BLUE        = "#3BBAE7"   # Primärakzent – Blau (Icon-Hintergrundfarbe)
-BLUE_HVR    = "#0497CA"   # Hover-Blau
+BLUE        = "#3BBAE7"   # Helles Blau – NUR für Textakzente / Highlights
+BLUE_HVR    = "#2AA8D8"   # Hover-Textakzent
+BTN_PRIMARY = "#1A6EB5"   # Dunkleres Blau für Button-BG  (Kontrast auf Weiß ≈ 4.8:1)
+BTN_HVR     = "#145A99"   # Hover Button-BG
 RED         = "#EE362E"   # Rotakzent
 RED_HVR     = "#C42020"   # Hover-Rot
 WHITE       = "#FFFFFF"
 TEXT_PRI    = "#FFFFFF"
-TEXT_SEC    = "#666666"   # Dunkleres Grau
+TEXT_SEC    = "#777777"   # Sekundäres Grau
 BORDER      = "#3A3A3A"   # Trennlinien
 
-# Compat-Aliase
-YELLOW      = BLUE
-YELLOW_HVR  = BLUE_HVR
+# Compat-Aliase  (YELLOW → dunkles Button-Blau, BLUE bleibt für Textakzente)
+YELLOW      = BTN_PRIMARY
+YELLOW_HVR  = BTN_HVR
 SURFACE     = BG
 ACCENT      = BLUE
 ACCENT_HOVER= BLUE_HVR

@@ -7,7 +7,14 @@ on:
 
 jobs:
   build-mac:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - os: macos-13
+            arch: intel
+          - os: macos-latest
+            arch: apple-silicon
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout
@@ -40,11 +47,11 @@ jobs:
       - name: Zip the .app bundle
         run: |
           cd dist
-          zip -r CardMe-macOS.zip CardMe.app
+          zip -r CardMe-macOS-${{ matrix.arch }}.zip CardMe.app
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CardMe-macOS
-          path: dist/CardMe-macOS.zip
+          name: CardMe-macOS-${{ matrix.arch }}
+          path: dist/CardMe-macOS-${{ matrix.arch }}.zip
           retention-days: 30

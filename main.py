@@ -67,7 +67,7 @@ else:
 # FARBEN  (Dunkelgrau · Blau · Rot – Icon-Palette)
 # ──────────────────────────────────────────────────────────────
 APP_TITLE    = "CardMe"
-APP_W, APP_H = 860, 600
+APP_W, APP_H = 1600, 800
 
 BG          = "#1A1A1A"   # Dunkles Grau – Haupt-BG
 SIDEBAR_BG  = "#111111"   # Sehr dunkles Grau für Sidebar
@@ -205,8 +205,9 @@ class CardMeApp(ctk.CTk):
         self.learn_order: list[int]   = []
         self.answer_visible: bool     = False
         self._flip_animating: bool    = False
-        self.CARD_W = 480
-        self.CARD_H = 260
+        self.CARD_W     = 900
+        self.CARD_H_MIN = 380   # Mindesthöhe der Karte
+        self.CARD_H_MAX = 680   # Maximalhöhe (bei sehr viel Text)
         self.FLIP_STEPS = 10
 
         self._build_ui()
@@ -357,7 +358,7 @@ class CardMeApp(ctk.CTk):
 
         self.card_frame = ctk.CTkFrame(
             self.card_outer,
-            width=self.CARD_W, height=self.CARD_H,
+            width=self.CARD_W, height=self.CARD_H_MIN,
             fg_color=CARD_BG, corner_radius=20,
             border_width=2, border_color=BORDER
         )
@@ -368,27 +369,38 @@ class CardMeApp(ctk.CTk):
             self.card_frame, text="",
             font=ctk.CTkFont(FONT, 9, "bold"), text_color=YELLOW
         )
-        self.lbl_side_hint.place(relx=0.5, rely=0.13, anchor="center")
+        self.lbl_side_hint.pack(pady=(16, 0))
 
         self.lbl_front = ctk.CTkLabel(
             self.card_frame,
             text="Wähle zuerst ein Deck aus.",
-            font=ctk.CTkFont(FONT, 19, "bold"),
-            text_color=WHITE, wraplength=420
+            font=ctk.CTkFont(FONT, 26, "bold"),
+            text_color=WHITE, wraplength=840
         )
-        self.lbl_front.place(relx=0.5, rely=0.44, anchor="center")
+        self.lbl_front.pack(padx=24, pady=16)
 
-        self.lbl_back = ctk.CTkLabel(
-            self.card_frame, text="",
-            font=ctk.CTkFont(FONT, 15),
-            text_color=WHITE, wraplength=420
-        )
-        self.lbl_back.place(relx=0.5, rely=0.76, anchor="center")
-
+        # Trennlinie (wird nur auf der Rückseite eingeblendet)
         self.divider_canvas = tk.Canvas(
             self.card_frame, height=1, bg=BORDER,
             highlightthickness=0, bd=0
         )
+
+        self.lbl_back = ctk.CTkLabel(
+            self.card_frame, text="",
+            font=ctk.CTkFont(FONT, 20),
+            text_color=WHITE, wraplength=840,
+            cursor="hand2"
+        )
+        self.lbl_back.bind("<Button-1>", lambda e: self._open_back_detail())
+        # lbl_back wird erst beim Aufdecken eingeblendet (pack)
+
+        self.lbl_back_hint = ctk.CTkLabel(
+            self.card_frame, text="↗  anklicken für Vollansicht",
+            font=ctk.CTkFont(FONT, 9), text_color=TEXT_SEC,
+            cursor="hand2"
+        )
+        self.lbl_back_hint.bind("<Button-1>", lambda e: self._open_back_detail())
+        # wird ebenfalls erst auf der Rückseite eingeblendet
 
         # Buttons
         btn_row = ctk.CTkFrame(outer, fg_color="transparent")
@@ -420,19 +432,39 @@ class CardMeApp(ctk.CTk):
         )
         self.btn_shuffle.pack()
 
+    # ── DYNAMISCHE KARTENHÖHE ─────────────────────────────────
+
+    def _resize_card(self):
+        """Passt die Kartenhöhe dynamisch an den sichtbaren Inhalt an."""
+        self.card_frame.update_idletasks()
+        total = 0
+        for widget in self.card_frame.winfo_children():
+            try:
+                if widget.winfo_ismapped():
+                    total += widget.winfo_reqheight() + 14  # ~14 px Abstand je Widget
+            except Exception:
+                pass
+        total += 24  # obere + untere Randabstand
+        new_h = max(self.CARD_H_MIN, min(total, self.CARD_H_MAX))
+        self.card_frame.configure(height=new_h)
+
     def _reset_learn(self):
         """Setzt Lernmodus zurück und mischt Karten neu."""
         self._flip_animating = False
         if not self.current_deck or not self.deck_cards:
             msg = "Wähle zuerst ein Deck aus." if not self.current_deck else "Dieses Deck ist noch leer."
+            self.divider_canvas.pack_forget()
+            self.lbl_back.pack_forget()
+            self.lbl_back.configure(text="")
+            # lbl_front sicherstellen, dass gepackt
+            self.lbl_front.pack(padx=24, pady=16)
             self.lbl_front.configure(text=msg, text_color=WHITE)
             self.lbl_side_hint.configure(text="")
-            self.lbl_back.configure(text="")
             self.lbl_progress.configure(text="")
-            self.divider_canvas.place_forget()
             self.btn_reveal.configure(state="disabled")
             self.btn_next.configure(state="disabled")
-            self.card_frame.configure(width=self.CARD_W, fg_color=CARD_BG, border_color=BORDER)
+            self.card_frame.configure(width=self.CARD_W, fg_color=CARD_BG,
+                                      border_color=BORDER, height=self.CARD_H_MIN)
             return
 
         self.learn_order = list(range(len(self.deck_cards)))
@@ -441,26 +473,86 @@ class CardMeApp(ctk.CTk):
         self.answer_visible = False
         self.btn_reveal.configure(state="normal")
         self.btn_next.configure(state="normal")
-        self.card_frame.configure(width=self.CARD_W, fg_color=CARD_BG, border_color=BORDER)
+        self.card_frame.configure(width=self.CARD_W, fg_color=CARD_BG,
+                                  border_color=BORDER, height=self.CARD_H_MIN)
         self._show_card_front()
 
     def _show_card_front(self):
         """Zeigt die Vorderseite der aktuellen Karte."""
+        # Rückseite ausblenden
+        self.divider_canvas.pack_forget()
+        self.lbl_back.pack_forget()
+        self.lbl_back.configure(text="")
+        self.lbl_back_hint.pack_forget()
+        # Vorderseite einblenden
+        self.lbl_front.pack(padx=24, pady=16)
         if self.learn_index >= len(self.learn_order):
             self.lbl_front.configure(text="🎉  Alle Karten geschafft!", text_color=YELLOW)
             self.lbl_side_hint.configure(text="")
-            self.lbl_back.configure(text="Deck neu mischen zum Wiederholen.")
             self.lbl_progress.configure(text="")
-            self.divider_canvas.place_forget()
+            self._resize_card()
             return
         card  = self.deck_cards[self.learn_order[self.learn_index]]
         total = len(self.learn_order)
         self.lbl_progress.configure(text=f"Karte  {self.learn_index + 1}  /  {total}")
         self.lbl_side_hint.configure(text="V O R D E R S E I T E", text_color=YELLOW)
         self.lbl_front.configure(text=card.get("front", ""), text_color=WHITE)
-        self.lbl_back.configure(text="")
-        self.divider_canvas.place_forget()
         self.answer_visible = False
+        self._resize_card()
+
+    def _open_back_detail(self):
+        """Öffnet ein modales Fenster mit dem vollständigen Rückseitentext."""
+        text = self.lbl_back.cget("text")
+        if not text or not self.answer_visible:
+            return
+
+        # Verhindert doppelte Fenster
+        if hasattr(self, "_detail_win") and self.winfo_exists() and self._detail_win.winfo_exists():
+            self._detail_win.focus()
+            return
+
+        win = ctk.CTkToplevel(self)
+        self._detail_win = win
+        win.title("Rückseite – Vollansicht")
+        win.geometry("1280x720")
+        win.resizable(True, True)
+        win.configure(fg_color=BG)
+        win.grab_set()  # Modal
+        win.focus()
+
+        # Zentrieren
+        win.update_idletasks()
+        x = self.winfo_x() + (self.winfo_width()  - 1280) // 2
+        y = self.winfo_y() + (self.winfo_height() - 720) // 2
+        win.geometry(f"1280x720+{x}+{y}")
+
+        # Header
+        ctk.CTkLabel(
+            win, text="R Ü C K S E I T E",
+            font=ctk.CTkFont(FONT, 9, "bold"), text_color=YELLOW
+        ).pack(pady=(18, 6))
+
+        # Scrollbares Textfeld
+        txt = ctk.CTkTextbox(
+            win, fg_color=CARD_BG, text_color=WHITE,
+            font=ctk.CTkFont(FONT, 14),
+            corner_radius=12, border_width=0,
+            wrap="word", state="normal"
+        )
+        txt.pack(fill="both", expand=True, padx=24, pady=(0, 12))
+        txt.insert("1.0", text)
+        txt.configure(state="disabled")
+
+        # Schließen-Button
+        ctk.CTkButton(
+            win, text="Schließen",
+            fg_color=SURFACE2, hover_color=BORDER,
+            text_color=WHITE, font=ctk.CTkFont(FONT, 12),
+            width=120, height=34,
+            command=win.destroy
+        ).pack(pady=(0, 18))
+
+        win.bind("<Escape>", lambda e: win.destroy())
 
     def _reveal_answer(self):
         """Startet die Flip-Animation zur Antwort."""
@@ -494,9 +586,14 @@ class CardMeApp(ctk.CTk):
             else:
                 self.card_frame.configure(fg_color="#1A2E3A", border_color=BLUE)
                 self.lbl_side_hint.configure(text="R Ü C K S E I T E", text_color=YELLOW)
-                self.lbl_front.configure(text="", text_color=WHITE)
+                # Vorderseite ausblenden, Rückseite einblenden
+                self.lbl_front.pack_forget()
+                self.divider_canvas.pack(fill="x", padx=28, pady=(0, 4))
                 self.lbl_back.configure(text=back_text, text_color=WHITE)
-                self.divider_canvas.place(relx=0.05, rely=0.56, relwidth=0.9, anchor="w")
+                self.lbl_back.pack(padx=24, pady=(0, 4))
+                self.lbl_back_hint.pack(pady=(0, 14))
+                # Höhe jetzt anpassen (Breite ist ~0 → kein visueller Sprung)
+                self._resize_card()
                 _expand(0)
 
         def _expand(step):
@@ -522,7 +619,7 @@ class CardMeApp(ctk.CTk):
                 self.after(18, lambda: _squeeze(step + 1))
             else:
                 self.card_frame.configure(fg_color=CARD_BG, border_color=BORDER)
-                self._show_card_front()
+                self._show_card_front()  # setzt auch neue Höhe via _resize_card
                 _expand(0)
 
         def _expand(step):
@@ -701,39 +798,44 @@ class CardMeApp(ctk.CTk):
 
         win = ctk.CTkToplevel(self)
         win.title("Karte bearbeiten")
-        win.geometry("520x380")
-        win.resizable(False, False)
+        win.geometry("700x580")
+        win.minsize(500, 440)
+        win.resizable(True, True)
         win.configure(fg_color=BG)
         win.grab_set()
 
+        win.grid_columnconfigure(0, weight=1)
+        win.grid_rowconfigure(2, weight=1)  # Vorderseite-Textbox wächst
+        win.grid_rowconfigure(4, weight=1)  # Rückseite-Textbox wächst
+
         ctk.CTkLabel(win, text="Karte bearbeiten",
                      font=ctk.CTkFont(FONT, 16, "bold"), text_color=WHITE
-                     ).pack(padx=28, pady=(22, 14), anchor="w")
+                     ).grid(row=0, column=0, padx=28, pady=(22, 14), sticky="w")
 
         ctk.CTkLabel(win, text="Vorderseite",
                      font=ctk.CTkFont(FONT, 11, "bold"), text_color=YELLOW
-                     ).pack(padx=28, anchor="w")
+                     ).grid(row=1, column=0, padx=28, sticky="w")
         txt_front = ctk.CTkTextbox(
-            win, width=460, height=90, fg_color=SURFACE2,
+            win, fg_color=SURFACE2,
             font=ctk.CTkFont(FONT, 13), border_width=1, border_color=BORDER,
-            text_color=WHITE
+            text_color=WHITE, wrap="word"
         )
-        txt_front.pack(padx=28, pady=(2, 12))
+        txt_front.grid(row=2, column=0, padx=28, pady=(2, 12), sticky="nsew")
         txt_front.insert("1.0", card.get("front", ""))
 
         ctk.CTkLabel(win, text="Rückseite",
                      font=ctk.CTkFont(FONT, 11, "bold"), text_color=YELLOW
-                     ).pack(padx=28, anchor="w")
+                     ).grid(row=3, column=0, padx=28, sticky="w")
         txt_back = ctk.CTkTextbox(
-            win, width=460, height=90, fg_color=SURFACE2,
+            win, fg_color=SURFACE2,
             font=ctk.CTkFont(FONT, 13), border_width=1, border_color=BORDER,
-            text_color=WHITE
+            text_color=WHITE, wrap="word"
         )
-        txt_back.pack(padx=28, pady=(2, 12))
+        txt_back.grid(row=4, column=0, padx=28, pady=(2, 12), sticky="nsew")
         txt_back.insert("1.0", card.get("back", ""))
 
         lbl_status = ctk.CTkLabel(win, text="", font=ctk.CTkFont(FONT, 11), text_color=YELLOW)
-        lbl_status.pack()
+        lbl_status.grid(row=5, column=0)
 
         def _apply():
             new_front = txt_front.get("1.0", "end").strip()
@@ -752,7 +854,7 @@ class CardMeApp(ctk.CTk):
             text_color=BTN_TEXT,
             font=ctk.CTkFont(FONT, 13, "bold"), height=38, width=220,
             command=_apply
-        ).pack(pady=10)
+        ).grid(row=6, column=0, pady=10)
 
     # ── SIDEBAR / DECK-MANAGEMENT ──────────────────────────────
 

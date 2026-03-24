@@ -7,14 +7,7 @@ on:
 
 jobs:
   build-mac:
-    strategy:
-      matrix:
-        include:
-          - os: macos-12
-            arch: intel
-          - os: macos-latest
-            arch: apple-silicon
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
 
     steps:
       - name: Checkout
@@ -47,13 +40,13 @@ jobs:
       - name: Zip the .app bundle
         run: |
           cd dist
-          zip -r CardMe-macOS-${{ matrix.arch }}.zip CardMe.app
+          zip -r CardMe-macOS.zip CardMe.app
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CardMe-macOS-${{ matrix.arch }}
-          path: dist/CardMe-macOS-${{ matrix.arch }}.zip
+          name: CardMe-macOS
+          path: dist/CardMe-macOS.zip
           retention-days: 30
 
       - name: Upload to GitHub Release (if tag exists)
@@ -62,7 +55,7 @@ jobs:
         run: |
           TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
           if [ -n "$TAG" ]; then
-            gh release upload "$TAG" dist/CardMe-macOS-${{ matrix.arch }}.zip --clobber && echo "✅ Uploaded to release $TAG"
+            gh release upload "$TAG" dist/CardMe-macOS.zip --clobber && echo "✅ Uploaded to release $TAG"
           else
             echo "No release found, skipping upload."
           fi

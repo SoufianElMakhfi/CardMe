@@ -30,16 +30,19 @@ _FONT_URLS = {
 }
 _FONTS_DIR = os.path.join(os.path.expanduser("~"), ".cardme_fonts")
 
+import sys as _sys
+
 def _register_fonts() -> bool:
     """Registriert bereits vorhandene TTF-Dateien bei Windows. Gibt True zurück wenn alle da sind."""
     all_present = True
     for fname in _FONT_URLS:
         fpath = os.path.join(_FONTS_DIR, fname)
         if os.path.exists(fpath):
-            try:
-                ctypes.windll.gdi32.AddFontResourceExW(fpath, 0x10, 0)
-            except Exception:
-                pass
+            if _sys.platform == "win32":
+                try:
+                    ctypes.windll.gdi32.AddFontResourceExW(fpath, 0x10, 0)
+                except Exception:
+                    pass
         else:
             all_present = False
     return all_present
@@ -52,15 +55,18 @@ def _download_fonts_background():
         if not os.path.exists(fpath):
             try:
                 urllib.request.urlretrieve(url, fpath)
-                ctypes.windll.gdi32.AddFontResourceExW(fpath, 0x10, 0)
+                if _sys.platform == "win32":
+                    ctypes.windll.gdi32.AddFontResourceExW(fpath, 0x10, 0)
             except Exception:
                 pass
+
+_FALLBACK_FONT = "Segoe UI" if _sys.platform == "win32" else "SF Pro Display" if _sys.platform == "darwin" else "DejaVu Sans"
 
 os.makedirs(_FONTS_DIR, exist_ok=True)
 if _register_fonts():
     FONT = "Poppins"
 else:
-    FONT = "Segoe UI"
+    FONT = _FALLBACK_FONT
     threading.Thread(target=_download_fonts_background, daemon=True).start()
 
 # ──────────────────────────────────────────────────────────────

@@ -55,3 +55,14 @@ jobs:
           name: CardMe-macOS-${{ matrix.arch }}
           path: dist/CardMe-macOS-${{ matrix.arch }}.zip
           retention-days: 30
+
+      - name: Upload to GitHub Release (if tag exists)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
+          if [ -n "$TAG" ]; then
+            gh release upload "$TAG" dist/CardMe-macOS-${{ matrix.arch }}.zip --clobber && echo "✅ Uploaded to release $TAG"
+          else
+            echo "No release found, skipping upload."
+          fi
